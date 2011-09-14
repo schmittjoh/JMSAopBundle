@@ -20,15 +20,15 @@ namespace JMS\AopBundle\Aop;
 
 final class PointcutContainer
 {
-    private $evaluators;
+    private $pointcuts;
 
-    public function __construct(array $evaluators)
+    public function __construct(array $pointcuts)
     {
-        $this->evaluators = $evaluators;
+        $this->pointcuts = $pointcuts;
     }
 
-    public function getEvaluators()
+    public function getPointcuts()
     {
-        return $this->evaluators;
+        return $this->pointcuts;
     }
 }

@@ -39,28 +39,28 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
  */
 class PointcutMatchingPass implements CompilerPassInterface
 {
-    private $evaluators;
+    private $pointcuts;
     private $cacheDir;
     private $container;
 
-    public function __construct(array $evaluators = null)
+    public function __construct(array $pointcuts = null)
     {
-        $this->evaluators = $evaluators;
+        $this->pointcuts = $pointcuts;
     }
 
     public function process(ContainerBuilder $container)
     {
         $this->container = $container;
         $this->cacheDir = $container->getParameter('jms_aop.cache_dir').'/proxies';
-        $evaluators = $this->getEvaluators();
+        $pointcuts = $this->getPointcuts();
 
         $interceptors = array();
         foreach ($container->getDefinitions() as $id => $definition) {
-            $this->processDefinition($definition, $evaluators, $interceptors);
+            $this->processDefinition($definition, $pointcuts, $interceptors);
 
-            $this->processInlineDefinitions($evaluators, $interceptors, $definition->getArguments());
-            $this->processInlineDefinitions($evaluators, $interceptors, $definition->getMethodCalls());
-            $this->processInlineDefinitions($evaluators, $interceptors, $definition->getProperties());
+            $this->processInlineDefinitions($pointcuts, $interceptors, $definition->getArguments());
+            $this->processInlineDefinitions($pointcuts, $interceptors, $definition->getMethodCalls());
+            $this->processInlineDefinitions($pointcuts, $interceptors, $definition->getProperties());
         }
 
         $container
@@ -69,17 +69,17 @@ class PointcutMatchingPass implements CompilerPassInterface
         ;
     }
 
-    private function processInlineDefinitions($evaluators, &$interceptors, array $a) {
+    private function processInlineDefinitions($pointcuts, &$interceptors, array $a) {
         foreach ($a as $k => $v) {
             if ($v instanceof Definition) {
-                $this->processDefinition($v, $evaluators, $interceptors);
+                $this->processDefinition($v, $pointcuts, $interceptors);
             } else if (is_array($v)) {
-                $this->processInlineDefinitions($evaluators, $interceptors, $v);
+                $this->processInlineDefinitions($pointcuts, $interceptors, $v);
             }
         }
     }
 
-    private function processDefinition(Definition $definition, $evaluators, &$interceptors)
+    private function processDefinition(Definition $definition, $pointcuts, &$interceptors)
     {
         if ($definition->isSynthetic()) {
             return;
@@ -96,14 +96,14 @@ class PointcutMatchingPass implements CompilerPassInterface
         $class = new \ReflectionClass($definition->getClass());
 
         // check if class is matched
-        $matchingEvaluators = array();
-        foreach ($evaluators as $interceptor => $evaluator) {
-            if ($evaluator->matchesClass($class)) {
-                $matchingEvaluators[$interceptor] = $evaluator;
+        $matchingPointcuts = array();
+        foreach ($pointcuts as $interceptor => $pointcut) {
+            if ($pointcut->matchesClass($class)) {
+                $matchingPointcuts[$interceptor] = $pointcut;
             }
         }
 
-        if (empty($matchingEvaluators)) {
+        if (empty($matchingPointcuts)) {
             return;
         }
 
@@ -120,8 +120,8 @@ class PointcutMatchingPass implements CompilerPassInterface
             }
 
             $advices = array();
-            foreach ($matchingEvaluators as $interceptor => $evaluator) {
-                if ($evaluator->matchesMethod($method)) {
+            foreach ($matchingPointcuts as $interceptor => $pointcut) {
+                if ($pointcut->matchesMethod($method)) {
                     $advices[] = $interceptor;
                 }
             }
@@ -164,28 +164,28 @@ class PointcutMatchingPass implements CompilerPassInterface
         } while (($class = $class->getParentClass()) && $class->getFilename());
     }
 
-    private function getEvaluators()
+    private function getPointcuts()
     {
-        if (null !== $this->evaluators) {
-            return $this->evaluators;
+        if (null !== $this->pointcuts) {
+            return $this->pointcuts;
         }
 
-        $evaluators = $evaluatorReferences = array();
+        $pointcuts = $pointcutReferences = array();
 
-        foreach ($this->container->findTaggedServiceIds('jms_aop.pointcut_evaluator') as $id => $attr) {
+        foreach ($this->container->findTaggedServiceIds('jms_aop.pointcut') as $id => $attr) {
             if (!isset($attr[0]['interceptor'])) {
-                throw new RuntimeException('You need to set the "interceptor" attribute for the "jms_aop.pointcut_evaluator" tag of service "'.$id.'".');
+                throw new RuntimeException('You need to set the "interceptor" attribute for the "jms_aop.pointcut" tag of service "'.$id.'".');
             }
 
-            $evaluatorReferences[$attr[0]['interceptor']] = new Reference($id);
-            $evaluators[$attr[0]['interceptor']] = $this->container->get($id);
+            $pointcutReferences[$attr[0]['interceptor']] = new Reference($id);
+            $pointcuts[$attr[0]['interceptor']] = $this->container->get($id);
         }
 
         $this->container
             ->getDefinition('jms_aop.pointcut_container')
-            ->addArgument($evaluatorReferences)
+            ->addArgument($pointcutReferences)
         ;
 
-        return $evaluators;
+        return $pointcuts;
     }
 }

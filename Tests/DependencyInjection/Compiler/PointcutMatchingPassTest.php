@@ -35,8 +35,8 @@ class PointcutMatchingPassTest extends \PHPUnit_Framework_TestCase
         $container = $this->getContainer();
 
         $container
-            ->register('evaluator', 'JMS\AopBundle\Tests\DependencyInjection\Compiler\Fixture\LoggingPointcut')
-            ->addTag('jms_aop.pointcut_evaluator', array('interceptor' => 'interceptor'))
+            ->register('pointcut', 'JMS\AopBundle\Tests\DependencyInjection\Compiler\Fixture\LoggingPointcut')
+            ->addTag('jms_aop.pointcut', array('interceptor' => 'interceptor'))
         ;
         $container
             ->register('interceptor', 'JMS\AopBundle\Tests\DependencyInjection\Compiler\Fixture\LoggingInterceptor')

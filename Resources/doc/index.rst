@@ -79,7 +79,12 @@ Pointcut
     
     class LoggingPointcut implements PointcutInterface
     {
-        public function matches(\ReflectionMethod $method)
+        public function matchesClass(\ReflectionClass $class)
+        {
+            return true;
+        }
+
+        public function matchesMethod(\ReflectionMethod $method)
         {
             return false !== strpos($method->name, 'delete');
         }
@@ -89,10 +94,10 @@ Pointcut
     
     # services.yml
     services:
-        my_logging_pointcut_evaluator:
-            class: LoggingPointcutEvaluator
+        my_logging_pointcut:
+            class: LoggingPointcut
             tags:
-                - { name: jms_aop.pointcut_evaluator, interceptor: logging_interceptor }
+                - { name: jms_aop.pointcut, interceptor: logging_interceptor }
 
 
 LoggingInterceptor
