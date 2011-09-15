@@ -62,14 +62,17 @@ of the original method. It contains the custom code that you would like to
 execute. At this point, you have access to the object on which the method is 
 called, and all the arguments which were passed to that method.
 
-Example
--------
+Examples
+--------
 
-As an example, we will be implementing logging for all methods that contain 
+1. Logging
+~~~~~~~~~~
+
+In this example, we will be implementing logging for all methods that contain
 "delete".
 
 Pointcut
-~~~~~~~~
+^^^^^^^^
 
 ::
 
@@ -101,7 +104,7 @@ Pointcut
 
 
 LoggingInterceptor
-~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -142,4 +145,105 @@ LoggingInterceptor
         logging_interceptor:
             class: LoggingInterceptor
             arguments: [@security.context, @logger]
-            
+
+
+2. Transaction Management
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pointcut
+^^^^^^^^
+
+::
+
+    use Doctrine\Common\Annotations\Reader;
+    use JMS\AopBundle\Aop\PointcutInterface;
+    use JMS\DiExtraBundle\Annotation as DI;
+    
+    /**
+     * @DI\Service
+     * @DI\Tag("jms_aop.pointcut", attributes = {"interceptor" = "aop.transactional_interceptor"})
+     *
+     * @author Johannes M. Schmitt <schmittjoh@gmail.com>
+     */
+    class TransactionalPointcut implements PointcutInterface
+    {
+        private $reader;
+    
+        /**
+         * @DI\InjectParams({
+         *     "reader" = @DI\Inject("annotation_reader"),
+         * })
+         * @param Reader $reader
+         */
+        public function __construct(Reader $reader)
+        {
+            $this->reader = $reader;
+        }
+    
+        public function matchesClass(\ReflectionClass $class)
+        {
+            return true;
+        }
+    
+        public function matchesMethod(\ReflectionMethod $method)
+        {
+            return null !== $this->reader->getMethodAnnotation($method, 'Annotation\Transactional');
+        }
+    }
+
+Interceptor
+^^^^^^^^^^^
+
+::
+    
+    use Symfony\Component\HttpKernel\Log\LoggerInterface;
+    use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+    use CG\Proxy\MethodInvocation;
+    use CG\Proxy\MethodInterceptorInterface;
+    use Doctrine\ORM\EntityManager;
+    use JMS\DiExtraBundle\Annotation as DI;
+    
+    /**
+     * @DI\Service("aop.transactional_interceptor")
+     *
+     * @author Johannes M. Schmitt <schmittjoh@gmail.com>
+     */
+    class TransactionalInterceptor implements MethodInterceptorInterface
+    {
+        private $em;
+        private $logger;
+    
+        /**
+         * @DI\InjectParams
+         * @param EntityManager $em
+         */
+        public function __construct(EntityManager $em, LoggerInterface $logger)
+        {
+            $this->em = $em;
+            $this->logger = $logger;
+        }
+    
+        public function intercept(MethodInvocation $invocation)
+        {
+            $this->logger->info('Beginning transaction for method "'.$invocation.'")');
+            $this->em->getConnection()->beginTransaction();
+            try {
+                $rs = $invocation->proceed();
+    
+                $this->logger->info(sprintf('Comitting transaction for method "%s" (method invocation successful)', $invocation));
+                $this->em->getConnection()->commit();
+    
+                return $rs;
+            } catch (\Exception $ex) {
+                if ($ex instanceof NotFoundHttpException) {
+                    $this->logger->info(sprintf('Committing transaction for method "%s" (exception thrown, but no rollback)', $invocation));
+                    $this->em->getConnection()->commit();
+                } else {
+                    $this->logger->info(sprintf('Rolling back transaction for method "%s" (exception thrown)', $invocation));
+                    $this->em->getConnection()->rollBack();
+                }
+    
+                throw $ex;
+            }
+        }
+    }
