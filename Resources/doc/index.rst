@@ -150,6 +150,9 @@ LoggingInterceptor
 2. Transaction Management
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+In this example, we add a @Transactional annotation, and we automatically wrap all methods
+where this annotation is declared in a transaction.
+
 Pointcut
 ^^^^^^^^
 
