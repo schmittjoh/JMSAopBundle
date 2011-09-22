@@ -93,6 +93,10 @@ class PointcutMatchingPass implements CompilerPassInterface
             require_once $file;
         }
 
+        if (!class_exists($definition->getClass())) {
+            return;
+        }
+
         $class = new \ReflectionClass($definition->getClass());
 
         // check if class is matched
