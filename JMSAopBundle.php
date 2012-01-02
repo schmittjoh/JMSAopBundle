@@ -25,6 +25,8 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 class JMSAopBundle extends Bundle
 {
+	const VERSION = '1.0.0';
+
     public function build(ContainerBuilder $container)
     {
         $container->addCompilerPass(new PointcutMatchingPass(), PassConfig::TYPE_AFTER_REMOVING);
