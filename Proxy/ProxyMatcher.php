@@ -29,6 +29,10 @@ class ProxyMatcher
      */
     public function getEnhanced(Definition $definition)
     {
+        if (isset($this->storage[$definition])) {
+            return $this->storage[$definition];
+        }
+
         $promise = new ProxyPromise($this);
         $this->storage[$definition] = $promise;
         return $promise;
@@ -36,7 +40,9 @@ class ProxyMatcher
 
     public function writeProxyFiles()
     {
-        foreach($this->storage as $definition => $promise) {
+        foreach($this->storage as $definition) {
+            $promise = $this->storage[$definition];
+
             $class = new \ReflectionClass($definition->getClass());
             $enhancer = $promise->getEnhancer($class);
 
