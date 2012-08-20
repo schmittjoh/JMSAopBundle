@@ -32,27 +32,34 @@ class InterceptorLoader implements InterceptorLoaderInterface
     private $interceptors;
     private $loadedInterceptors = array();
 
+    /**
+     * @param ContainerInterface $container
+     * @param array              $interceptors
+     */
     public function __construct(ContainerInterface $container, array $interceptors)
     {
         $this->container = $container;
         $this->interceptors = $interceptors;
     }
 
-    public function loadInterceptors(\ReflectionMethod $method)
+    /**
+     * {@inheritdoc}
+     */
+    public function loadInterceptors(\ReflectionClass $class, \ReflectionMethod $method)
     {
-        if (!isset($this->interceptors[$method->class][$method->name])) {
+        if (!isset($this->interceptors[$class->name][$method->name])) {
             return array();
         }
 
-        if (isset($this->loadedInterceptors[$method->class][$method->name])) {
-            return $this->loadedInterceptors[$method->class][$method->name];
+        if (isset($this->loadedInterceptors[$class->name][$method->name])) {
+            return $this->loadedInterceptors[$class->name][$method->name];
         }
 
         $interceptors = array();
-        foreach ($this->interceptors[$method->class][$method->name] as $id) {
+        foreach ($this->interceptors[$class->name][$method->name] as $id) {
             $interceptors[] = $this->container->get($id);
         }
 
-        return $this->loadedInterceptors[$method->class][$method->name] = $interceptors;
+        return $this->loadedInterceptors[$class->name][$method->name] = $interceptors;
     }
 }

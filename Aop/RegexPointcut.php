@@ -29,17 +29,26 @@ class RegexPointcut implements PointcutInterface
 {
     private $pattern;
 
+    /**
+     * @param string $pattern
+     */
     public function __construct($pattern)
     {
         $this->pattern = $pattern;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function matchesClass(\ReflectionClass $class)
     {
         return true;
     }
 
-    public function matchesMethod(\ReflectionMethod $method)
+    /**
+     * {@inheritdoc}
+     */
+    public function matchesMethod(\ReflectionClass $class, \ReflectionMethod $method)
     {
         return 0 < preg_match('#'.$this->pattern.'#', sprintf('%s::%s', $method->class, $method->name));
     }
