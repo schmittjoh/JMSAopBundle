@@ -22,12 +22,13 @@ use JMS\AopBundle\Aop\PointcutInterface;
 
 class LoggingPointcut implements PointcutInterface
 {
+
     public function matchesClass(\ReflectionClass $class)
     {
         return true;
     }
 
-    public function matchesMethod(\ReflectionMethod $method)
+    public function matchesMethod(\ReflectionClass $class, \ReflectionMethod $method)
     {
         return false !== strpos($method->name, 'delete');
     }

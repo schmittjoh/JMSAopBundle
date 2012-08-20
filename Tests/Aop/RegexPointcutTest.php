@@ -32,11 +32,12 @@ class RegexPointcutTest extends \PHPUnit_Framework_TestCase
     {
         $pointcut = new RegexPointcut('foo$');
 
+        $class = new \ReflectionClass('JMS\AopBundle\Tests\Aop\RegexPointcutTestClass');
         $method = new \ReflectionMethod('JMS\AopBundle\Tests\Aop\RegexPointcutTestClass', 'foo');
-        $this->assertTrue($pointcut->matchesMethod($method));
+        $this->assertTrue($pointcut->matchesMethod($class, $method));
 
         $method = new \ReflectionMethod('JMS\AopBundle\Tests\Aop\RegexPointcutTestClass', 'bar');
-        $this->assertFalse($pointcut->matchesMethod($method));
+        $this->assertFalse($pointcut->matchesMethod($class, $method));
     }
 }
 

@@ -37,6 +37,7 @@ interface PointcutInterface
      * annotations.
      *
      * @param \ReflectionClass $class
+     *
      * @return boolean
      */
     function matchesClass(\ReflectionClass $class);
@@ -47,8 +48,10 @@ interface PointcutInterface
      * This method is not limited in the way the matchesClass method is. It may
      * use information in the associated class to make its decision.
      *
+     * @param \ReflectionClass $class
      * @param \ReflectionMethod $method
+     *
      * @return boolean
      */
-    function matchesMethod(\ReflectionMethod $method);
+    function matchesMethod(\ReflectionClass $class, \ReflectionMethod $method);
 }
