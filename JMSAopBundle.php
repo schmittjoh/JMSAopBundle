@@ -20,6 +20,7 @@ namespace JMS\AopBundle;
 
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use JMS\AopBundle\DependencyInjection\Compiler\PointcutMatchingPass;
+use JMS\AopBundle\DependencyInjection\Compiler\WriteProxiesPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
@@ -30,5 +31,6 @@ class JMSAopBundle extends Bundle
     public function build(ContainerBuilder $container)
     {
         $container->addCompilerPass(new PointcutMatchingPass(), PassConfig::TYPE_AFTER_REMOVING);
+        $container->addCompilerPass(new WriteProxiesPass(), PassConfig::TYPE_AFTER_REMOVING);
     }
 }

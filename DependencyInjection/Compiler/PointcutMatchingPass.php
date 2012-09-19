@@ -40,7 +40,6 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 class PointcutMatchingPass implements CompilerPassInterface
 {
     private $pointcuts;
-    private $cacheDir;
     private $container;
 
     public function __construct(array $pointcuts = null)
@@ -51,7 +50,6 @@ class PointcutMatchingPass implements CompilerPassInterface
     public function process(ContainerBuilder $container)
     {
         $this->container = $container;
-        $this->cacheDir = $container->getParameter('jms_aop.cache_dir').'/proxies';
         $pointcuts = $this->getPointcuts();
 
         $interceptors = array();
@@ -154,12 +152,11 @@ class PointcutMatchingPass implements CompilerPassInterface
         if ($file) {
             $generator->setRequiredFile($file);
         }
-        $enhancer = new Enhancer($class, array(), array(
-            $generator
-        ));
-        $enhancer->writeClass($filename = $this->cacheDir.'/'.str_replace('\\', '-', $class->name).'.php');
-        $definition->setFile($filename);
-        $definition->setClass($enhancer->getClassName($class));
+
+        $matcher = $this->container->get('jms_aop.proxy_matcher');
+        $proxy = $matcher->getEnhanced($definition);
+        $proxy->addGenerator($generator);
+
         $definition->addMethodCall('__CGInterception__setLoader', array(
             new Reference('jms_aop.interceptor_loader')
         ));

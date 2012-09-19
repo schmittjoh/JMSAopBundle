@@ -6,6 +6,7 @@
 
     <parameters>
         <parameter key="jms_aop.interceptor_loader.class">JMS\AopBundle\Aop\InterceptorLoader</parameter>
+        <parameter key="jms_aop.proxy_matcher.class">JMS\AopBundle\Proxy\ProxyMatcher</parameter>
     </parameters>
 
     <services>
@@ -13,6 +14,10 @@
         
         <service id="jms_aop.interceptor_loader" class="%jms_aop.interceptor_loader.class%">
             <argument type="service" id="service_container" />
+        </service>
+
+        <service id="jms_aop.proxy_matcher" class="%jms_aop.proxy_matcher.class%">
+            <argument>%jms_aop.cache_dir%/proxies</argument>
         </service>
     </services>
 </container>
