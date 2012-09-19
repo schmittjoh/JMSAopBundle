@@ -123,6 +123,10 @@ class PointcutMatchingPass implements CompilerPassInterface
                 continue;
             }
 
+            if ('__construct' === $method->name) {
+                continue;
+            }
+
             $advices = array();
             foreach ($matchingPointcuts as $interceptor => $pointcut) {
                 if ($pointcut->matchesMethod($method)) {
