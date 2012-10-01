@@ -18,8 +18,6 @@
 
 namespace JMS\AopBundle\Tests\Aop;
 
-use JMS\AopBundle\Aop\PointcutContainer;
-
 use JMS\AopBundle\Aop\InterceptorLoader;
 
 class InterceptorLoaderTest extends \PHPUnit_Framework_TestCase

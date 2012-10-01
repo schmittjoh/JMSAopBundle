@@ -69,16 +69,25 @@ class PointcutMatchingPass implements CompilerPassInterface
         ;
     }
 
-    private function processInlineDefinitions($pointcuts, &$interceptors, array $a) {
+    /**
+     * @param array $pointcuts
+     * @param array $interceptors
+     */
+    private function processInlineDefinitions($pointcuts, &$interceptors, array $a)
+    {
         foreach ($a as $k => $v) {
             if ($v instanceof Definition) {
                 $this->processDefinition($v, $pointcuts, $interceptors);
-            } else if (is_array($v)) {
+            } elseif (is_array($v)) {
                 $this->processInlineDefinitions($pointcuts, $interceptors, $v);
             }
         }
     }
 
+    /**
+     * @param array $pointcuts
+     * @param array $interceptors
+     */
     private function processDefinition(Definition $definition, $pointcuts, &$interceptors)
     {
         if ($definition->isSynthetic()) {
