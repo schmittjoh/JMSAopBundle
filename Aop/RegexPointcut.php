@@ -29,6 +29,9 @@ class RegexPointcut implements PointcutInterface
 {
     private $pattern;
 
+    /**
+     * @param array<string> $pattern
+     */
     public function __construct($pattern)
     {
         $this->pattern = $pattern;

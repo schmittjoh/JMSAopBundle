@@ -19,7 +19,6 @@
 namespace JMS\AopBundle\DependencyInjection\Compiler;
 
 use CG\Core\ClassUtils;
-
 use JMS\AopBundle\Exception\RuntimeException;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\Reference;
@@ -28,6 +27,7 @@ use CG\Proxy\InterceptionGenerator;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use JMS\AopBundle\Aop\PointcutInterface;
 
 /**
  * Matches pointcuts against service methods.
@@ -43,6 +43,9 @@ class PointcutMatchingPass implements CompilerPassInterface
     private $cacheDir;
     private $container;
 
+    /**
+     * @param array<PointcutInterface> $pointcuts
+     */
     public function __construct(array $pointcuts = null)
     {
         $this->pointcuts = $pointcuts;
@@ -70,8 +73,8 @@ class PointcutMatchingPass implements CompilerPassInterface
     }
 
     /**
-     * @param array $pointcuts
-     * @param array $interceptors
+     * @param array<PointcutInterface> $pointcuts
+     * @param array<string,string> $interceptors
      */
     private function processInlineDefinitions($pointcuts, &$interceptors, array $a)
     {
@@ -85,8 +88,8 @@ class PointcutMatchingPass implements CompilerPassInterface
     }
 
     /**
-     * @param array $pointcuts
-     * @param array $interceptors
+     * @param array<PointcutInterface> $pointcuts
+     * @param array<string,string> $interceptors
      */
     private function processDefinition(Definition $definition, $pointcuts, &$interceptors)
     {

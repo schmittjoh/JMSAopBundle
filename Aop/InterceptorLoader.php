@@ -32,6 +32,10 @@ class InterceptorLoader implements InterceptorLoaderInterface
     private $interceptors;
     private $loadedInterceptors = array();
 
+    /**
+     * @param ContainerInterface $container
+     * @param array<array<string>> $interceptors
+     */
     public function __construct(ContainerInterface $container, array $interceptors)
     {
         $this->container = $container;

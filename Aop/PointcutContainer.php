@@ -22,6 +22,9 @@ final class PointcutContainer
 {
     private $pointcuts;
 
+    /**
+     * @param array<PointcutInterface> $pointcuts
+     */
     public function __construct(array $pointcuts)
     {
         $this->pointcuts = $pointcuts;
