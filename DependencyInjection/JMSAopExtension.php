@@ -33,6 +33,7 @@ class JMSAopExtension extends Extension
 {
     /**
      * {@inheritDoc}
+     * @param array<array<string,string>> $configs
      */
     public function load(array $configs, ContainerBuilder $container)
     {

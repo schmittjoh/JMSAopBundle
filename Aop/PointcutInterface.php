@@ -36,10 +36,10 @@ interface PointcutInterface
      * Specifically, you may not use any data in the class itself, such as
      * annotations.
      *
-     * @param \ReflectionClass $class
+     * @param  \ReflectionClass $class
      * @return boolean
      */
-    function matchesClass(\ReflectionClass $class);
+    public function matchesClass(\ReflectionClass $class);
 
     /**
      * Determines whether the advice applies to the given method.
@@ -47,8 +47,8 @@ interface PointcutInterface
      * This method is not limited in the way the matchesClass method is. It may
      * use information in the associated class to make its decision.
      *
-     * @param \ReflectionMethod $method
+     * @param  \ReflectionMethod $method
      * @return boolean
      */
-    function matchesMethod(\ReflectionMethod $method);
+    public function matchesMethod(\ReflectionMethod $method);
 }
