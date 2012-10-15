@@ -22,7 +22,7 @@ use JMS\AopBundle\Exception\RuntimeException;
 use Symfony\Component\DependencyInjection\Compiler\ResolveParameterPlaceHoldersPass;
 use JMS\AopBundle\DependencyInjection\JMSAopExtension;
 use JMS\AopBundle\DependencyInjection\Compiler\PointcutMatchingPass;
-use Symfony\Component\HttpKernel\Util\Filesystem;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 class PointcutMatchingPassTest extends \PHPUnit_Framework_TestCase

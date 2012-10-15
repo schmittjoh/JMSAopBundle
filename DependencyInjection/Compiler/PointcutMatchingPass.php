@@ -28,6 +28,7 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use JMS\AopBundle\Aop\PointcutInterface;
+use CG\Core\ReflectionUtils;
 
 /**
  * Matches pointcuts against service methods.
@@ -130,10 +131,7 @@ class PointcutMatchingPass implements CompilerPassInterface
         }
 
         $classAdvices = array();
-        foreach ($class->getMethods(\ReflectionMethod::IS_PROTECTED | \ReflectionMethod::IS_PUBLIC) as $method) {
-            if ($method->isFinal()) {
-                continue;
-            }
+        foreach (ReflectionUtils::getOverrideableMethods($class) as $method) {
 
             if ('__construct' === $method->name) {
                 continue;
