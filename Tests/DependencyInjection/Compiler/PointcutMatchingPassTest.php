@@ -51,7 +51,9 @@ class PointcutMatchingPassTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('JMS\AopBundle\Tests\DependencyInjection\Compiler\Fixture\TestService', $service);
         $this->assertTrue($service->add());
         $this->assertTrue($service->delete());
-        $this->assertEquals(array('delete'), $container->get('interceptor')->getLog());
+        $this->assertTrue($service->parentDelete());
+        $this->assertTrue($service->overwrittenDelete());
+        $this->assertEquals(array('delete', 'parentDelete', 'overwrittenDelete'), $container->get('interceptor')->getLog());
     }
 
     protected function setUp()
