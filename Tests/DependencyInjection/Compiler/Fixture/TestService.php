@@ -18,7 +18,7 @@
 
 namespace JMS\AopBundle\Tests\DependencyInjection\Compiler\Fixture;
 
-class TestService
+class TestService extends ParentService
 {
     public function add()
     {
@@ -26,6 +26,11 @@ class TestService
     }
 
     public function delete()
+    {
+        return true;
+    }
+
+    public function overwrittenDelete()
     {
         return true;
     }
