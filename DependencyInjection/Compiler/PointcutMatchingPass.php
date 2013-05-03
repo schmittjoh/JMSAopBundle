@@ -19,6 +19,7 @@
 namespace JMS\AopBundle\DependencyInjection\Compiler;
 
 use CG\Core\ClassUtils;
+use CG\Core\DefaultNamingStrategy;
 use JMS\AopBundle\Exception\RuntimeException;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\Reference;
@@ -167,6 +168,7 @@ class PointcutMatchingPass implements CompilerPassInterface
         $enhancer = new Enhancer($class, array(), array(
             $generator
         ));
+        $enhancer->setNamingStrategy(new DefaultNamingStrategy('EnhancedProxy'.substr(md5($this->container->getParameter('jms_aop.cache_dir')), 0, 8)));
         $enhancer->writeClass($filename = $this->cacheDir.'/'.str_replace('\\', '-', $class->name).'.php');
         $definition->setFile($filename);
         $definition->setClass($enhancer->getClassName($class));
