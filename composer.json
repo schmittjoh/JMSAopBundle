@@ -3,7 +3,7 @@
     "description": "Adds AOP capabilities to Symfony2",
     "keywords": ["annotations","aop"],
     "type": "symfony-bundle",
-    "license": "Apache",
+    "license": "Apache-2.0",
     "authors": [
         {
             "name": "Johannes M. Schmitt",
