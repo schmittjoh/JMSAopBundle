@@ -99,7 +99,12 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
-        if ($definition->getFactoryService() || $definition->getFactoryClass()) {
+        // Symfony 2.6 getFactory method
+        // TODO: Use only getFactory when bumping require to Symfony >= 2.6
+        if (method_exists($definition, 'getFactory') && $definition->getFactory()) {
+            return;
+        }
+        if (!method_exists($definition, 'getFactory') && ($definition->getFactoryService() || $definition->getFactoryClass())) {
             return;
         }
 
