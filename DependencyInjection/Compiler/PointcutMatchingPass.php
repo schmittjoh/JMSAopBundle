@@ -20,6 +20,7 @@ namespace JMS\AopBundle\DependencyInjection\Compiler;
 
 use CG\Core\ClassUtils;
 use CG\Core\DefaultNamingStrategy;
+use CG\Generator\RelativePath;
 use JMS\AopBundle\Exception\RuntimeException;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\Reference;
@@ -103,8 +104,8 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
-        if ($file = $definition->getFile()) {
-            require_once $file;
+        if ($originalFilename = $definition->getFile()) {
+            require_once $originalFilename;
         }
 
         if (!class_exists($definition->getClass())) {
@@ -158,23 +159,50 @@ class PointcutMatchingPass implements CompilerPassInterface
 
         $interceptors[ClassUtils::getUserClass($class->name)] = $classAdvices;
 
+        $proxyFilename = $this->cacheDir.'/'.str_replace('\\', '-', $class->name).'.php';
+
         $generator = new InterceptionGenerator();
         $generator->setFilter(function(\ReflectionMethod $method) use ($classAdvices) {
             return isset($classAdvices[$method->name]);
         });
-        if ($file) {
-            $generator->setRequiredFile($file);
+
+        if ($originalFilename) {
+            $relativeOriginalFilename = $this->relativizePath($proxyFilename, $originalFilename);
+            if ($relativeOriginalFilename[0] === '.') {
+                $generator->setRequiredFile(new RelativePath($relativeOriginalFilename));
+            } else {
+                $generator->setRequiredFile($relativeOriginalFilename);
+            }
         }
         $enhancer = new Enhancer($class, array(), array(
             $generator
         ));
         $enhancer->setNamingStrategy(new DefaultNamingStrategy('EnhancedProxy'.substr(md5($this->container->getParameter('jms_aop.cache_dir')), 0, 8)));
-        $enhancer->writeClass($filename = $this->cacheDir.'/'.str_replace('\\', '-', $class->name).'.php');
-        $definition->setFile($filename);
+        $enhancer->writeClass($proxyFilename);
+        $definition->setFile($proxyFilename);
         $definition->setClass($enhancer->getClassName($class));
         $definition->addMethodCall('__CGInterception__setLoader', array(
             new Reference('jms_aop.interceptor_loader')
         ));
+    }
+
+    private function relativizePath($targetPath, $path)
+    {
+        $commonPath = dirname($targetPath);
+
+        $level = 0;
+        while ( ! empty($commonPath)) {
+            if (0 === strpos($path, $commonPath)) {
+                $relativePath = str_repeat('../', $level).substr($path, strlen($commonPath) + 1);
+
+                return $relativePath;
+            }
+
+            $commonPath = dirname($commonPath);
+            $level += 1;
+        }
+
+        return $path;
     }
 
     private function addResources(\ReflectionClass $class)
