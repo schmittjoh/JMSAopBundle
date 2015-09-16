@@ -100,7 +100,19 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
-        if ($definition->getFactoryService() || $definition->getFactoryClass()) {
+        // Ignore security.context definition preventing the deprecation error since Symfony 2.7
+        if (version_compare(\Symfony\Component\HttpKernel\Kernel::VERSION, '2.7') > 0) {
+            if ($definition->getClass() == 'Symfony\Component\Security\Core\SecurityContext') {
+                return;
+            }
+        }
+
+        // Use getFactory method when available preventing the deprecation error since Symfony 2.7
+        if (method_exists($definition, 'getFactory')) {
+            if ($definition->getFactory()) {
+                return;
+            }
+        } elseif ($definition->getFactoryService() || $definition->getFactoryClass()) {
             return;
         }
 
