@@ -31,6 +31,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use JMS\AopBundle\Aop\PointcutInterface;
 use CG\Core\ReflectionUtils;
+use Symfony\Component\HttpKernel\Kernel;
 
 /**
  * Matches pointcuts against service methods.
@@ -118,8 +119,14 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
-        if ($definition->getFactory()) {
-            return;
+        if (Kernel::VERSION_ID < 20600) {
+            if ($definition->getFactory()) {
+                return;
+            }
+        } else {
+            if ($definition->getFactoryService() || $definition->getFactoryClass()) {
+                return;
+            }
         }
 
         if ($originalFilename = $definition->getFile()) {
