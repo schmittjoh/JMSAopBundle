@@ -31,6 +31,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use JMS\AopBundle\Aop\PointcutInterface;
 use CG\Core\ReflectionUtils;
+use Symfony\Component\HttpKernel\Kernel;
 
 /**
  * Matches pointcuts against service methods.
@@ -42,18 +43,34 @@ use CG\Core\ReflectionUtils;
  */
 class PointcutMatchingPass implements CompilerPassInterface
 {
+    /**
+     * @var array<PointcutInterface>
+     */
     private $pointcuts;
+
+    /**
+     * @var string
+     */
     private $cacheDir;
+
+    /**
+     * @var ContainerBuilder
+     */
     private $container;
 
     /**
-     * @param array<PointcutInterface> $pointcuts
+     * Constructor.
+     *
+     * @param PointcutInterface[] $pointcuts
      */
     public function __construct(array $pointcuts = null)
     {
         $this->pointcuts = $pointcuts;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function process(ContainerBuilder $container)
     {
         $this->container = $container;
@@ -76,8 +93,9 @@ class PointcutMatchingPass implements CompilerPassInterface
     }
 
     /**
-     * @param array<PointcutInterface> $pointcuts
-     * @param array<string,string> $interceptors
+     * @param PointcutInterface[] $pointcuts
+     * @param string[]            $interceptors
+     * @param array               $a
      */
     private function processInlineDefinitions($pointcuts, &$interceptors, array $a)
     {
@@ -91,8 +109,9 @@ class PointcutMatchingPass implements CompilerPassInterface
     }
 
     /**
-     * @param array<PointcutInterface> $pointcuts
-     * @param array<string,string> $interceptors
+     * @param Definition          $definition
+     * @param PointcutInterface[] $pointcuts
+     * @param string[]            $interceptors
      */
     private function processDefinition(Definition $definition, $pointcuts, &$interceptors)
     {
@@ -100,8 +119,14 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
-        if ($definition->getFactoryService() || $definition->getFactoryClass()) {
-            return;
+        if (Kernel::VERSION_ID < 20600) {
+            if ($definition->getFactory()) {
+                return;
+            }
+        } else {
+            if ($definition->getFactoryService() || $definition->getFactoryClass()) {
+                return;
+            }
         }
 
         if ($originalFilename = $definition->getFile()) {
@@ -115,6 +140,7 @@ class PointcutMatchingPass implements CompilerPassInterface
         $class = new \ReflectionClass($definition->getClass());
 
         // check if class is matched
+        /** @var PointcutInterface[] $matchingPointcuts */
         $matchingPointcuts = array();
         foreach ($pointcuts as $interceptor => $pointcut) {
             if ($pointcut->matchesClass($class)) {
@@ -126,7 +152,7 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
-        $this->addResources($class, $this->container);
+        $this->addResources($class);
 
         if ($class->isFinal()) {
             return;
@@ -186,6 +212,12 @@ class PointcutMatchingPass implements CompilerPassInterface
         ));
     }
 
+    /**
+     * @param string $targetPath
+     * @param string $path
+     *
+     * @return string
+     */
     private function relativizePath($targetPath, $path)
     {
         $commonPath = dirname($targetPath);
@@ -205,6 +237,9 @@ class PointcutMatchingPass implements CompilerPassInterface
         return $path;
     }
 
+    /**
+     * @param \ReflectionClass $class
+     */
     private function addResources(\ReflectionClass $class)
     {
         do {
@@ -212,6 +247,9 @@ class PointcutMatchingPass implements CompilerPassInterface
         } while (($class = $class->getParentClass()) && $class->getFilename());
     }
 
+    /**
+     * @return PointcutInterface[]
+     */
     private function getPointcuts()
     {
         if (null !== $this->pointcuts) {
