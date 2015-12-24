@@ -18,19 +18,19 @@
 
 namespace JMS\AopBundle\DependencyInjection\Compiler;
 
-use CG\Core\ClassUtils;
-use CG\Core\DefaultNamingStrategy;
-use CG\Generator\RelativePath;
+use gossi\codegen\generator\CodeFileGenerator;
+use gossi\codegen\model\PhpClass;
+use gossi\codegen\model\PhpMethod;
+use gossi\codegen\model\PhpParameter;
+use gossi\codegen\model\PhpProperty;
+use gossi\codegen\utils\ReflectionUtils;
 use JMS\AopBundle\Exception\RuntimeException;
 use Symfony\Component\Config\Resource\FileResource;
 use Symfony\Component\DependencyInjection\Reference;
-use CG\Proxy\Enhancer;
-use CG\Proxy\InterceptionGenerator;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use JMS\AopBundle\Aop\PointcutInterface;
-use CG\Core\ReflectionUtils;
 
 /**
  * Matches pointcuts against service methods.
@@ -44,6 +44,10 @@ class PointcutMatchingPass implements CompilerPassInterface
 {
     private $pointcuts;
     private $cacheDir;
+    private $generator;
+    /**
+     * @var ContainerBuilder
+     */
     private $container;
 
     /**
@@ -52,6 +56,7 @@ class PointcutMatchingPass implements CompilerPassInterface
     public function __construct(array $pointcuts = null)
     {
         $this->pointcuts = $pointcuts;
+        $this->generator = new CodeFileGenerator();
     }
 
     public function process(ContainerBuilder $container)
@@ -137,6 +142,7 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
+        $phpClass = $this->getProxyClass($class);
         $classAdvices = array();
         foreach (ReflectionUtils::getOverrideableMethods($class) as $method) {
 
@@ -155,6 +161,9 @@ class PointcutMatchingPass implements CompilerPassInterface
                 continue;
             }
 
+
+            $phpClass->setMethod($this->getProxyMethod($method));
+
             $classAdvices[$method->name] = $advices;
         }
 
@@ -162,33 +171,111 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
-        $interceptors[ClassUtils::getUserClass($class->name)] = $classAdvices;
+        $interceptors[$this->getUserClass($class->name)] = $classAdvices;
 
         $proxyFilename = $this->cacheDir.'/'.str_replace('\\', '-', $class->name).'.php';
-
-        $generator = new InterceptionGenerator();
-        $generator->setFilter(function(\ReflectionMethod $method) use ($classAdvices) {
-            return isset($classAdvices[$method->name]);
-        });
 
         if ($originalFilename) {
             $relativeOriginalFilename = $this->relativizePath($proxyFilename, $originalFilename);
             if ($relativeOriginalFilename[0] === '.') {
-                $generator->setRequiredFile(new RelativePath($relativeOriginalFilename));
+                $phpClass->addRequiredFile($this->cacheDir . '/' . $relativeOriginalFilename);
             } else {
-                $generator->setRequiredFile($relativeOriginalFilename);
+                $phpClass->addRequiredFile($relativeOriginalFilename);
             }
         }
-        $enhancer = new Enhancer($class, array(), array(
-            $generator
-        ));
-        $enhancer->setNamingStrategy(new DefaultNamingStrategy('EnhancedProxy'.substr(md5($this->container->getParameter('jms_aop.cache_dir')), 0, 8)));
-        $enhancer->writeClass($proxyFilename);
+
+        $phpClass->setNamespace($this->getProxyNamespace($class));
+        $this->writeProxyClass($proxyFilename, $this->generator->generate($phpClass));
+
         $definition->setFile($proxyFilename);
-        $definition->setClass($enhancer->getClassName($class));
+        $definition->setClass($phpClass->getName());
         $definition->addMethodCall('__CGInterception__setLoader', array(
             new Reference('jms_aop.interceptor_loader')
         ));
+    }
+
+    private function writeProxyClass($proxyFilename, $proxyClassCode)
+    {
+        if (!is_dir($dir = dirname($proxyFilename))) {
+            if (false === @mkdir($dir, 0777, true)) {
+                throw new \RuntimeException(sprintf('Could not create directory "%s".', $dir));
+            }
+        }
+        if (!is_writable($dir)) {
+            throw new \RuntimeException(sprintf('The directory "%s" is not writable.', $dir));
+        }
+        file_put_contents($proxyFilename, $proxyClassCode);
+    }
+
+    /**
+     * @param \ReflectionMethod $method
+     * @return PhpMethod
+     */
+    private function getProxyMethod(\ReflectionMethod $method)
+    {
+        $genMethod = new PhpMethod($method->name);
+        $parameters = $method->getParameters();
+        $paramList = array();
+        foreach ($parameters as $parameter) {
+            $phpParam = PhpParameter::fromReflection($parameter);
+            $paramList[] = '$' . $parameter->name;
+            $genMethod->addParameter($phpParam);
+        }
+        if (method_exists($method, 'getReturnType')) {
+            $genMethod->setType($method->getReturnType());
+        }
+        $className = var_export($this->getUserClass($method->getDeclaringClass()->name), true);
+        $methodName = var_export($method->name, true);
+        $interceptorCode =
+            "\$ref = new \\ReflectionMethod($className, $methodName);\n"
+            .'$interceptors = $this->__CGInterception__loader->loadInterceptors($ref, $this, array(%s));'."\n"
+            .'$invocation = new \JMS\AopBundle\Aop\Proxy\MethodInvocation($ref, $this, array(' . implode(', ', $paramList) . '), $interceptors);'."\n\n"
+            .'return $invocation->proceed();'
+        ;
+        $genMethod->setBody($interceptorCode);
+
+        return $genMethod;
+
+    }
+
+    /**
+     * @param \ReflectionClass $class
+     * @return PhpClass
+     */
+    private function getProxyClass(\ReflectionClass $class)
+    {
+        $phpClass = new PhpClass($class->name);
+        $loaderProp = new PhpProperty('__CGInterception__loader');
+        $loaderProp->setVisibility(PhpProperty::VISIBILITY_PRIVATE);
+        $phpClass->setProperty($loaderProp);
+        $loaderSetter = new PhpMethod('__CGInterception__setLoader');
+        $loaderParam = new PhpParameter('loader');
+        $loaderParam->setType('JMS\AopBundle\Aop\InterceptorLoaderInterface');
+        $loaderSetter->addParameter($loaderParam);
+        $loaderSetter->setBody('$this->__CGInterception__loader = $loader;');
+        $phpClass->setMethod($loaderSetter);
+        return $phpClass;
+
+    }
+
+    private function getProxyNamespace(\ReflectionClass $class)
+    {
+        $cacheDir = $this->container->getParameter('jms_aop.cache_dir');
+        $prefix = 'EnhancedProxy'.substr(md5($cacheDir), 0, 8).'_';
+        $classPart = sha1($class->name).'\\';
+        $separator = '__CG__\\';
+        $userClass = $this->getUserClass($class->name);
+
+        return $prefix . $classPart . $separator . $userClass;
+
+    }
+    private function getUserClass($className)
+    {
+        if (false === $pos = strrpos($className, '\\'.NamingStrategyInterface::SEPARATOR.'\\')) {
+            return $className;
+        }
+
+        return substr($className, $pos + NamingStrategyInterface::SEPARATOR_LENGTH + 2);
     }
 
     private function relativizePath($targetPath, $path)

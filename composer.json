@@ -13,9 +13,10 @@
     "require": {
         "php": ">=5.3.9",
         "symfony/framework-bundle": "^2.3|^3.0",
-        "jms/cg": "^1.1"
+        "gossi/php-code-generator": "^1.1@dev"
     },
     "require-dev": {
+	"phpunit/phpunit": "^5.0.0",
         "symfony/phpunit-bridge": "^2.7"
     },
     "autoload": {
@@ -23,7 +24,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.1.x-dev"
+            "dev-master": "1.2.x-dev"
         }
     }
 }
