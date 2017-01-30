@@ -16,7 +16,8 @@
         "jms/cg": "^1.1"
     },
     "require-dev": {
-        "symfony/phpunit-bridge": "^2.7"
+        "symfony/phpunit-bridge": "^2.7",
+        "phpunit/phpunit": "^4.5.8"
     },
     "autoload": {
         "psr-4": { "JMS\\AopBundle\\": "" }
