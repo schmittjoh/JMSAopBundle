@@ -23,6 +23,7 @@ use CG\Core\DefaultNamingStrategy;
 use CG\Generator\RelativePath;
 use JMS\AopBundle\Exception\RuntimeException;
 use Symfony\Component\Config\Resource\FileResource;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Reference;
 use CG\Proxy\Enhancer;
 use CG\Proxy\InterceptionGenerator;
@@ -44,6 +45,10 @@ class PointcutMatchingPass implements CompilerPassInterface
 {
     private $pointcuts;
     private $cacheDir;
+
+    /**
+     * @var ContainerBuilder
+     */
     private $container;
 
     /**
@@ -91,8 +96,9 @@ class PointcutMatchingPass implements CompilerPassInterface
     }
 
     /**
-     * @param array<PointcutInterface> $pointcuts
-     * @param array<string,string> $interceptors
+     * @param Definition $definition
+     * @param PointcutInterface[] $pointcuts
+     * @param array $interceptors array<string,string>
      */
     private function processDefinition(Definition $definition, $pointcuts, &$interceptors)
     {
@@ -131,15 +137,15 @@ class PointcutMatchingPass implements CompilerPassInterface
             return;
         }
 
-        $this->addResources($class, $this->container);
+        $this->addResources($class);
 
         if ($class->isFinal()) {
             return;
         }
 
         $classAdvices = array();
+        /** @var \ReflectionMethod $method */
         foreach (ReflectionUtils::getOverrideableMethods($class) as $method) {
-
             if ('__construct' === $method->name) {
                 continue;
             }
@@ -156,13 +162,13 @@ class PointcutMatchingPass implements CompilerPassInterface
             }
 
             $classAdvices[$method->name] = $advices;
+            $className = ClassUtils::getUserClass($method->getDeclaringClass()->getName());
+            $interceptors[$className][$method->name] = $advices;
         }
 
         if (empty($classAdvices)) {
             return;
         }
-
-        $interceptors[ClassUtils::getUserClass($class->name)] = $classAdvices;
 
         $proxyFilename = $this->cacheDir.'/'.str_replace('\\', '-', $class->name).'.php';
 
@@ -213,8 +219,8 @@ class PointcutMatchingPass implements CompilerPassInterface
     private function addResources(\ReflectionClass $class)
     {
         do {
-            $this->container->addResource(new FileResource($class->getFilename()));
-        } while (($class = $class->getParentClass()) && $class->getFilename());
+            $this->container->addResource(new FileResource($class->getFileName()));
+        } while (($class = $class->getParentClass()) && $class->getFileName());
     }
 
     private function getPointcuts()

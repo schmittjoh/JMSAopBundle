@@ -18,20 +18,15 @@
 
 namespace JMS\AopBundle\Tests\DependencyInjection\Compiler\Fixture;
 
-class TestService extends AbstractTestService
+abstract class AbstractTestService
 {
-    public function add()
-    {
-        return true;
-    }
-
-    public function delete()
+    public function someParentDelete()
     {
         return true;
     }
 
     public function inheritDelete()
     {
-        return true;
+        return false;
     }
 }
