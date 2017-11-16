@@ -15,6 +15,8 @@ cache:
 matrix:
     fast_finish: true
     include:
+        - php: 7.1
+          env: SYMFONY_VERSION='4.0.*' DEPENDENCIES=beta
         - php: 5.3
           env: COMPOSER_FLAGS="--prefer-lowest" SYMFONY_DEPRECATIONS_HELPER=weak
         - php: 5.6
@@ -25,6 +27,7 @@ matrix:
 before_install:
     - composer self-update
     - if [ "$SYMFONY_VERSION" != "" ]; then composer require --dev --no-update symfony/symfony=$SYMFONY_VERSION; fi
+    - if [ "$DEPENDENCIES" = "beta" ]; then composer config minimum-stability beta; fi;
 
 install: composer update $COMPOSER_FLAGS
 

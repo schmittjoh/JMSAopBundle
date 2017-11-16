@@ -12,11 +12,11 @@
     ],
     "require": {
         "php": ">=5.3.9",
-        "symfony/framework-bundle": "^2.3|^3.0",
+        "symfony/framework-bundle": "^2.3|^3.0|^4.0",
         "jms/cg": "^1.1"
     },
     "require-dev": {
-        "symfony/phpunit-bridge": "^2.7"
+        "symfony/phpunit-bridge": "^2.7|^4.0"
     },
     "autoload": {
         "psr-4": { "JMS\\AopBundle\\": "" }
