@@ -19,12 +19,13 @@
 namespace JMS\AopBundle\Tests\Aop;
 
 use JMS\AopBundle\Aop\InterceptorLoader;
+use PHPUnit\Framework\TestCase;
 
-class InterceptorLoaderTest extends \PHPUnit_Framework_TestCase
+class InterceptorLoaderTest extends TestCase
 {
     public function testLoadInterceptors()
     {
-        $interceptor = $this->getMock('CG\Proxy\MethodInterceptorInterface');
+        $interceptor = $this->getMockBuilder('CG\Proxy\MethodInterceptorInterface')->getMock();
 
         list($loader, $container) = $this->getLoader(array(
             'JMS\AopBundle\Tests\Aop\InterceptorLoaderTestClass' => array(
@@ -48,7 +49,7 @@ class InterceptorLoaderTest extends \PHPUnit_Framework_TestCase
 
     private function getLoader(array $interceptors = array())
     {
-        $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
+        $container = $this->getMockBuilder('Symfony\Component\DependencyInjection\ContainerInterface')->getMock();
 
         return array(new InterceptorLoader($container, $interceptors), $container);
     }
