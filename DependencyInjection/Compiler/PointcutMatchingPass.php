@@ -139,7 +139,6 @@ class PointcutMatchingPass implements CompilerPassInterface
 
         $classAdvices = array();
         foreach (ReflectionUtils::getOverrideableMethods($class) as $method) {
-
             if ('__construct' === $method->name) {
                 continue;
             }
@@ -156,13 +155,16 @@ class PointcutMatchingPass implements CompilerPassInterface
             }
 
             $classAdvices[$method->name] = $advices;
+            $className = ClassUtils::getUserClass($method->getDeclaringClass()->getName());
+            $interceptors[$className][$method->name] = $advices;
+
         }
+
 
         if (empty($classAdvices)) {
             return;
         }
 
-        $interceptors[ClassUtils::getUserClass($class->name)] = $classAdvices;
 
         $proxyFilename = $this->cacheDir.'/'.str_replace('\\', '-', $class->name).'.php';
 
