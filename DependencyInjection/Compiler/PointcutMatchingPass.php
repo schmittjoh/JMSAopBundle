@@ -186,9 +186,12 @@ class PointcutMatchingPass implements CompilerPassInterface
         $enhancer->writeClass($proxyFilename);
         $definition->setFile($proxyFilename);
         $definition->setClass($enhancer->getClassName($class));
-        $definition->addMethodCall('__CGInterception__setLoader', array(
+
+        $interceptor_loader = array(array('__CGInterception__setLoader', array(
             new Reference('jms_aop.interceptor_loader')
-        ));
+        )));
+
+        $definition->setMethodCalls(array_merge($interceptor_loader, $definition->getMethodCalls() ) );
     }
 
     private function relativizePath($targetPath, $path)
