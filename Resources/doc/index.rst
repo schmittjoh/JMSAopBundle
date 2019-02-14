@@ -47,7 +47,7 @@ Configuration
 ::
 
     jms_aop:
-        cache_dir: %kernel.cache_dir%/jms_aop
+        cache_dir: '%kernel.cache_dir%/jms_aop'
 
 
 Usage
